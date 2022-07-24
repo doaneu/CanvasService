@@ -3,6 +3,13 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+#Dev app settings
+appsettings.Development.json
+
+# Hangfire database
+Hangfire.db
+Hangfire-log.db
+
 # User-specific files
 *.rsuser
 *.suo
