@@ -4,7 +4,7 @@ Integrate Ethos and Canvas. View the wiki for more information on configuration.
 
 ## Milestones
 
-### 1.0.0: Users
+### ~~1.0.0: Users~~
 ### 1.1.0: Terms
 ### 1.2.0: Courses
 ### 1.3.0: Sections
