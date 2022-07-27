@@ -54,12 +54,8 @@ namespace CanvasService.Jobs
             //Resolve email
             email = JSONPather.ResolveTemplate(appSettings["USER-EMAIL"], content);
 
-            //If any of the above three resolutions comes back blank, stop the job. Don't create or update incomplete records.
-            if (string.IsNullOrEmpty(sis_user_id) || string.IsNullOrEmpty(login_id) || string.IsNullOrEmpty(email))
-                return;
-
-            //If this is a delete, remove the login
-            if (changeNotification.Operation.Equals("deleted"))
+            //If this is a delete, remove the login, or if the user does not have a login_id
+            if (changeNotification.Operation.Equals("deleted") || string.IsNullOrEmpty(login_id))
             {
                 //Do a GET of the current logins
                 request = new RestRequest("/users/sis_user_id:" + sis_user_id + "/logins");
@@ -89,6 +85,10 @@ namespace CanvasService.Jobs
                     return;
                 }
             }
+
+            //If any of the above three resolutions comes back blank, stop the job. Don't create or update incomplete records.
+            if (string.IsNullOrEmpty(sis_user_id) || string.IsNullOrEmpty(login_id) || string.IsNullOrEmpty(email))
+                return;
 
             //Start Names // // // // / / / // / / / / / / / / / / / / // / / / / / / /  / / / / / / / / /
             //Get the names for the person we have to loop through them and set vars as we go
