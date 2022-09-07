@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CanvasService.Models.Canvas;
 using EthosClient;
 using Hangfire;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 
@@ -18,9 +19,23 @@ namespace CanvasService.Jobs
         }
 
         [Queue("job")]
-        [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+        //[DisableConcurrentExecution(timeoutInSeconds: 5)]
         public async Task Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
+            //Delay job for a random amount
+            int delay = new Random().Next(1, 30) * 1000;
+            System.Threading.Thread.Sleep(delay);
+
+            //JSON output of job info to console, for logging services like New Relic
+            Event serviceEvent = new Event();
+            serviceEvent.ServiceName = "Canvas.Service";
+            serviceEvent.EventName = "User Job - Start";
+            serviceEvent.EventKey = changeNotification.Resource.Id;
+            serviceEvent.EventDetails = changeNotification.Content;
+
+            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
+
             //Create the Ethos Client
             EthosHttpClient ethosHttpClient = new EthosHttpClient();
             ethosHttpClient.ApiKey = appSettings["ETHOS-API-KEY"];
@@ -45,17 +60,47 @@ namespace CanvasService.Jobs
             string email = string.Empty;
             string time_zone = string.Empty;
 
-            //Resolve sis_user_id
-            sis_user_id = JSONPather.ResolveTemplate(appSettings["USER-SIS-USER-ID"], content);
+            //Only try this if there is content
+            if (content != null)
+            {
+                //Resolve sis_user_id
+                sis_user_id = JSONPather.ResolveTemplate(appSettings["USER-SIS-USER-ID"], content);
 
-            //Resolve login_id
-            login_id = JSONPather.ResolveTemplate(appSettings["USER-LOGIN-ID"], content);
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Resolve SIS User ID";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = sis_user_id;
 
-            //Resolve email
-            email = JSONPather.ResolveTemplate(appSettings["USER-EMAIL"], content);
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
+
+                //Resolve login_id
+                login_id = JSONPather.ResolveTemplate(appSettings["USER-LOGIN-ID"], content);
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Resolve Login ID";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = login_id;
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
+                //Resolve email
+                email = JSONPather.ResolveTemplate(appSettings["USER-EMAIL"], content);
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Resolve Email";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = email;
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
+            }
 
             //If this is a delete, remove the login, or if the user does not have a login_id
-            if (changeNotification.Operation.Equals("deleted") || string.IsNullOrEmpty(login_id))
+            if ((changeNotification.Operation.Equals("deleted") || string.IsNullOrEmpty(login_id)) && (!changeNotification.Operation.Equals("created") && !changeNotification.Operation.Equals("updated") && !changeNotification.Operation.Equals("replaced")))
             {
                 //Do a GET of the current logins
                 request = new RestRequest("/users/sis_user_id:" + sis_user_id + "/logins");
@@ -64,17 +109,25 @@ namespace CanvasService.Jobs
 
                 RestResponse<List<Login>> logResponse = await client.ExecuteGetAsync<List<Login>>(request);
 
-                //Get the Ids needed to update the login
-                int accountId = logResponse.Data[0].account_id;
-                int loginId = logResponse.Data[0].id;
-
                 //If a 404, login does not exist, nothing to do but end
                 if (logResponse.StatusCode.Equals(HttpStatusCode.NotFound))
                 {
+                    serviceEvent = new Event();
+                    serviceEvent.ServiceName = "Canvas.Service";
+                    serviceEvent.EventName = "User Job - End";
+                    serviceEvent.EventKey = changeNotification.Resource.Id;
+                    serviceEvent.EventDetails = "No Canvas User to Delete";
+
+                    Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
                     return;
                 }
                 else
                 {
+                    //Get the Ids needed to update the login
+                    int accountId = logResponse.Data[0].account_id;
+                    int loginId = logResponse.Data[0].id;
+
                     //Otherwise delete the login
                     request = null;
                     request = new RestRequest("/users/sis_user_id:" + sis_user_id + "/logins/" + loginId);
@@ -82,13 +135,33 @@ namespace CanvasService.Jobs
                     request.AddHeader("Authorization", "Bearer " + appSettings["CANVAS-API-KEY"]);
 
                     await client.DeleteAsync(request);
+
+                    serviceEvent = new Event();
+                    serviceEvent.ServiceName = "Canvas.Service";
+                    serviceEvent.EventName = "User Job - End";
+                    serviceEvent.EventKey = changeNotification.Resource.Id;
+                    serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " was deleted";
+
+                    Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
                     return;
                 }
             }
 
+           
+
             //If any of the above three resolutions comes back blank, stop the job. Don't create or update incomplete records.
             if (string.IsNullOrEmpty(sis_user_id) || string.IsNullOrEmpty(login_id) || string.IsNullOrEmpty(email))
+            {
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - End";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "sis_user_id, login_id, or email was not resolved to a value. Stopping job so incomplete records are not created.";
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
                 return;
+            }
 
             //Start Names // // // // / / / // / / / / / / / / / / / / // / / / / / / /  / / / / / / / / /
             //Get the names for the person we have to loop through them and set vars as we go
@@ -156,6 +229,17 @@ namespace CanvasService.Jobs
             short_name = resolvedFirstName + " " + resolvedLastName;
             sortable_name = resolvedLastName + ", " + resolvedFirstName;
 
+            serviceEvent = new Event();
+            serviceEvent.ServiceName = "Canvas.Service";
+            serviceEvent.EventName = "User Job - Resolve Name";
+            serviceEvent.EventKey = changeNotification.Resource.Id;
+
+            var loggableNames = new { name=name, short_name=short_name, sortable_name=sortable_name };
+
+            serviceEvent.EventDetails = loggableNames;
+
+            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
             //End Names // // // // / / / // / / / / / / / / / / / / // / / / / / / /  / / / / / / / / /
 
             //Get the personal pronoun, but only if one is selected by the person
@@ -167,6 +251,14 @@ namespace CanvasService.Jobs
                 string version = null;
                 response = ethosHttpClient.Get(pronounGuid, "personal-pronouns", version);
                 pronoun = JSONPather.GetValue("$.title", JObject.Parse(response.Data));
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Resolve Preferred Pronoun";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "Pronoun resolved to "+pronoun;
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
             }
 
             //Handle an update
@@ -259,11 +351,36 @@ namespace CanvasService.Jobs
                 }
 
                 userExists = true;
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Update User";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " has been updated";
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - End";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "Job has ended";
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+
                 return;
             }
             else
             {
                 userExists = false;
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Force User Create";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " does not exist to be updated. Forcing a creation.";
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
             }
 
 
@@ -297,8 +414,23 @@ namespace CanvasService.Jobs
                 //https://community.canvaslms.com/t5/Idea-Conversations/Personal-Pronouns-should-be-editable-through-Canvas-API-without/idi-p/464190#:~:text=Current%20Solution&text=Have%20an%20admin%20manually%20check,change%20their%20pronouns%20in%20Canvas%E2%80%9D
 
                 RestResponse userResponse = await client.ExecutePutAsync(request);
-                string test = "";
+
+                serviceEvent = new Event();
+                serviceEvent.ServiceName = "Canvas.Service";
+                serviceEvent.EventName = "User Job - Create User";
+                serviceEvent.EventKey = changeNotification.Resource.Id;
+                serviceEvent.EventDetails = "User with sis_user_id of "+sis_user_id+" has been created";
+
+                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
             }
+
+            serviceEvent = new Event();
+            serviceEvent.ServiceName = "Canvas.Service";
+            serviceEvent.EventName = "User Job - End";
+            serviceEvent.EventKey = changeNotification.Resource.Id;
+            serviceEvent.EventDetails = "Job has ended";
+
+            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
         }
 
     }

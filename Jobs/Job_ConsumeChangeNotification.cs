@@ -36,7 +36,9 @@ namespace CanvasService.Jobs
                 _appSettings.Add("USER-LOGIN-ID", Configuration["USER-LOGIN-ID"]);
                 _appSettings.Add("USER-EMAIL", Configuration["USER-EMAIL"]);
                 _appSettings.Add("USER-AUTH-PROVIDER", Configuration["USER-AUTH-PROVIDER"]);
-                _appSettings.Add("USER-DEFAULT-ACCOUNT", Configuration["USER-DEFAULT-ACCOUNT"]);
+                _appSettings.Add("DEFAULT-ACCOUNT", Configuration["DEFAULT-ACCOUNT"]);
+                _appSettings.Add("TERM-SIS-TERM-ID", Configuration["TERM-SIS-TERM-ID"]);
+                _appSettings.Add("TERM-SIS-TERM-NAME", Configuration["TERM-SIS-TERM-NAME"]);
             }
             else
             {
@@ -47,13 +49,15 @@ namespace CanvasService.Jobs
                 _appSettings.Add("USER-LOGIN-ID", Environment.GetEnvironmentVariable("USER-LOGIN-ID"));
                 _appSettings.Add("USER-EMAIL", Environment.GetEnvironmentVariable("USER-EMAIL"));
                 _appSettings.Add("USER-AUTH-PROVIDER", Environment.GetEnvironmentVariable("USER-AUTH-PROVIDER"));
-                _appSettings.Add("USER-DEFAULT-ACCOUNT", Environment.GetEnvironmentVariable("USER-DEFAULT-ACCOUNT"));
+                _appSettings.Add("DEFAULT-ACCOUNT", Environment.GetEnvironmentVariable("DEFAULT-ACCOUNT"));
+                _appSettings.Add("TERM-SIS-TERM-ID", Environment.GetEnvironmentVariable("TERM-SIS-TERM-ID"));
+                _appSettings.Add("TERM-SIS-TERM-NAME", Environment.GetEnvironmentVariable("TERM-SIS-TERM-NAME"));
             }
         
         }
 
         [Queue("consume")]
-        public string Start()
+        public void Start()
         {
 
             EthosHttpClient ethosHttpClient = new EthosHttpClient();
@@ -76,12 +80,15 @@ namespace CanvasService.Jobs
                     case "persons":
                         BackgroundJob.Enqueue(() => new JobRouter_persons().Start(_appSettings, changeNotification));
                         break;
+                    /*case "academic-periods":
+                        BackgroundJob.Enqueue(() => new JobRouter_academic_periods().Start(_appSettings, changeNotification));
+                        break;*/
                 }
 
                 
             }
 
-            return JsonConvert.SerializeObject(items.ToArray());
+            return;
         }
 
     }
