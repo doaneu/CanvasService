@@ -387,7 +387,7 @@ namespace CanvasService.Jobs
             //Handle a create
             if (!userExists)
             {
-                request = new RestRequest("/accounts/" + appSettings["USER-DEFAULT-ACCOUNT"] + "/users");
+                request = new RestRequest("/accounts/" + appSettings["DEFAULT-ACCOUNT"] + "/users");
                 request.Method = Method.Post;
                 request.AddHeader("Authorization", "Bearer " + appSettings["CANVAS-API-KEY"]);
                 request.AddParameter("user[name]", name, ParameterType.QueryString);
