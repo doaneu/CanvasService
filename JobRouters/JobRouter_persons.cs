@@ -17,6 +17,7 @@ namespace CanvasService.JobRouters
         }
 
         [Queue("jobrouter")]
+        [Transaction]
         public void Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             BackgroundJob.Enqueue(() => new Job_User().Start(appSettings, changeNotification));

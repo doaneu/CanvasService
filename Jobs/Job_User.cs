@@ -6,6 +6,7 @@ using CanvasService.Models.Canvas;
 using EthosClient;
 using Hangfire;
 using log4net;
+using NewRelic.Api.Agent;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
@@ -22,6 +23,7 @@ namespace CanvasService.Jobs
         }
 
         [Queue("job")]
+        [Transaction]
         public async Task Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             //Delay job for a random amount

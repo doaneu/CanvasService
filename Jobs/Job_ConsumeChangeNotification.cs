@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Hangfire;
 using CanvasService.JobRouters;
 using System.Collections.Specialized;
+using NewRelic.Api.Agent;
 
 namespace CanvasService.Jobs
 {
@@ -57,6 +58,7 @@ namespace CanvasService.Jobs
         }
 
         [Queue("consume")]
+        [Transaction]
         public void Start()
         {
 

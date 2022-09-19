@@ -6,6 +6,7 @@ using Hangfire;
 using EthosClient;
 using System.Collections.Specialized;
 using CanvasService.Jobs;
+using NewRelic.Api.Agent;
 
 namespace CanvasService.JobRouters
 {
@@ -17,6 +18,7 @@ namespace CanvasService.JobRouters
         }
 
         [Queue("jobrouter")]
+        [Transaction]
         public void Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             

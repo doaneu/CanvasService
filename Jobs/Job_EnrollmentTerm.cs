@@ -7,6 +7,7 @@ using System.Web;
 using CanvasService.Models.Canvas;
 using EthosClient;
 using Hangfire;
+using NewRelic.Api.Agent;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 
@@ -21,6 +22,7 @@ namespace CanvasService.Jobs
 
         [Queue("job")]
         [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
+        [Transaction]
         public async Task Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             //Create the Ethos Client

@@ -17,6 +17,7 @@ namespace SalesforceService.JobRouters
         }
 
         [Queue("jobrouter")]
+        [Transaction]
         public void Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             BackgroundJob.Enqueue(() => new Job_EnrollmentTerm().Start(appSettings, changeNotification));
