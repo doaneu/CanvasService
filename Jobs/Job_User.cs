@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CanvasService.Models.Canvas;
 using EthosClient;
 using Hangfire;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
@@ -13,13 +14,14 @@ namespace CanvasService.Jobs
 {
     public class Job_User
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Job_User));
+
         public void Job_UserJob()
         {
 
         }
 
         [Queue("job")]
-        //[DisableConcurrentExecution(timeoutInSeconds: 5)]
         public async Task Start(Dictionary<string, string> appSettings, ChangeNotificationV2 changeNotification)
         {
             //Delay job for a random amount
@@ -33,7 +35,7 @@ namespace CanvasService.Jobs
             serviceEvent.EventKey = changeNotification.Resource.Id;
             serviceEvent.EventDetails = changeNotification.Content;
 
-            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+            log.Info(serviceEvent);
 
 
             //Create the Ethos Client
@@ -72,7 +74,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = sis_user_id;
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
 
 
                 //Resolve login_id
@@ -84,7 +86,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = login_id;
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
 
                 //Resolve email
                 email = JSONPather.ResolveTemplate(appSettings["USER-EMAIL"], content);
@@ -95,7 +97,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = email;
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
 
             }
 
@@ -118,7 +120,7 @@ namespace CanvasService.Jobs
                     serviceEvent.EventKey = changeNotification.Resource.Id;
                     serviceEvent.EventDetails = "No Canvas User to Delete";
 
-                    Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                    log.Info(serviceEvent);
 
                     return;
                 }
@@ -142,7 +144,7 @@ namespace CanvasService.Jobs
                     serviceEvent.EventKey = changeNotification.Resource.Id;
                     serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " was deleted";
 
-                    Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                    log.Info(serviceEvent);
 
                     return;
                 }
@@ -159,7 +161,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "sis_user_id, login_id, or email was not resolved to a value. Stopping job so incomplete records are not created.";
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
                 return;
             }
 
@@ -238,7 +240,7 @@ namespace CanvasService.Jobs
 
             serviceEvent.EventDetails = loggableNames;
 
-            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+            log.Info(serviceEvent);
 
             //End Names // // // // / / / // / / / / / / / / / / / / // / / / / / / /  / / / / / / / / /
 
@@ -258,7 +260,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "Pronoun resolved to "+pronoun;
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
             }
 
             //Handle an update
@@ -358,7 +360,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " has been updated";
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
 
                 serviceEvent = new Event();
                 serviceEvent.ServiceName = "Canvas.Service";
@@ -366,7 +368,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "Job has ended";
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
 
                 return;
             }
@@ -380,7 +382,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "User with sis_user_id of " + sis_user_id + " does not exist to be updated. Forcing a creation.";
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
             }
 
 
@@ -421,7 +423,7 @@ namespace CanvasService.Jobs
                 serviceEvent.EventKey = changeNotification.Resource.Id;
                 serviceEvent.EventDetails = "User with sis_user_id of "+sis_user_id+" has been created";
 
-                Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+                log.Info(serviceEvent);
             }
 
             serviceEvent = new Event();
@@ -430,7 +432,7 @@ namespace CanvasService.Jobs
             serviceEvent.EventKey = changeNotification.Resource.Id;
             serviceEvent.EventDetails = "Job has ended";
 
-            Console.WriteLine(JsonConvert.SerializeObject(serviceEvent));
+            log.Info(serviceEvent);
         }
 
     }
