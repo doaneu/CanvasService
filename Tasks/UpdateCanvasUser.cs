@@ -31,8 +31,26 @@ namespace CanvasService.Tasks
             string short_name = task.InputData["short_name"].ToString();
             string sortable_name = task.InputData["sortable_name"].ToString();
             string login_id = task.InputData["login_id"].ToString();
-            string username = task.InputData["username"].ToString();
-            string sis_user_id = task.InputData["sis_user_id"].ToString();
+
+            string sis_user_id = String.Empty;
+            try
+            {
+                sis_user_id = task.InputData["sis_user_id"].ToString();
+            }
+            catch
+            {
+
+            }
+
+            string username = String.Empty;
+            try
+            {
+                username = task.InputData["username"].ToString();
+            }
+            catch
+            {
+
+            }
 
             string pronoun = String.Empty;
             try
