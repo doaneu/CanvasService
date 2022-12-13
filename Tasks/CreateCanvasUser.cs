@@ -25,12 +25,6 @@ namespace CanvasService.Tasks
             Dictionary<string, object> output = new Dictionary<string, object>();
 
             //Assign the input vars
-            string account_id = task.InputData["account_id"].ToString();
-            string auth_provider = task.InputData["auth_provider"].ToString();
-            string name = task.InputData["name"].ToString();
-            string short_name = task.InputData["short_name"].ToString();
-            string sortable_name = task.InputData["sortable_name"].ToString();
-
             string sis_user_id = String.Empty;
             try
             {
@@ -74,6 +68,13 @@ namespace CanvasService.Tasks
             {
                 return task.Completed(output, logList);
             }
+
+            string account_id = task.InputData["account_id"].ToString();
+            string auth_provider = task.InputData["auth_provider"].ToString();
+            string name = task.InputData["name"].ToString();
+            string short_name = task.InputData["short_name"].ToString();
+            string sortable_name = task.InputData["sortable_name"].ToString();
+
 
             //Create the RESTClient
             var client = new RestClient(Environment.GetEnvironmentVariable("CANVAS-API"));
