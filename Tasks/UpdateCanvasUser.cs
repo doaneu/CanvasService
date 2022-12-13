@@ -33,7 +33,16 @@ namespace CanvasService.Tasks
             string login_id = task.InputData["login_id"].ToString();
             string username = task.InputData["username"].ToString();
             string sis_user_id = task.InputData["sis_user_id"].ToString();
-            string pronoun = task.InputData["pronoun"].ToString();
+
+            string pronoun = String.Empty;
+            try
+            {
+             pronoun = task.InputData["pronoun"].ToString();
+            }
+            catch
+            {
+
+            }
 
             string email = string.Empty;
             if (!string.IsNullOrEmpty(username))
@@ -68,8 +77,11 @@ namespace CanvasService.Tasks
             request.Method = Method.PUT;
             request.AddHeader("Authorization", "Bearer " + Environment.GetEnvironmentVariable("CANVAS-API-KEY"));
 
-            request.AddParameter("user[pronouns]", pronoun, ParameterType.QueryString);
-            //https://community.canvaslms.com/t5/Idea-Conversations/Personal-Pronouns-should-be-editable-through-Canvas-API-without/idi-p/464190#:~:text=Current%20Solution&text=Have%20an%20admin%20manually%20check,change%20their%20pronouns%20in%20Canvas%E2%80%9D
+            if (!string.IsNullOrEmpty(pronoun))
+            {
+                request.AddParameter("user[pronouns]", pronoun, ParameterType.QueryString);
+                //https://community.canvaslms.com/t5/Idea-Conversations/Personal-Pronouns-should-be-editable-through-Canvas-API-without/idi-p/464190#:~:text=Current%20Solution&text=Have%20an%20admin%20manually%20check,change%20their%20pronouns%20in%20Canvas%E2%80%9D
+            }
 
             request.AddParameter("user[name]", name, ParameterType.QueryString);
             request.AddParameter("user[short_name]", short_name, ParameterType.QueryString);

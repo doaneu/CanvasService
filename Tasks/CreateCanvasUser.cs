@@ -32,7 +32,16 @@ namespace CanvasService.Tasks
             string sortable_name = task.InputData["sortable_name"].ToString();
             string username = task.InputData["username"].ToString();
             string sis_user_id = task.InputData["sis_user_id"].ToString();
-            string pronoun = task.InputData["pronoun"].ToString();
+
+            string pronoun = String.Empty;
+            try
+            {
+                pronoun = task.InputData["pronoun"].ToString();
+            }
+            catch
+            {
+
+            }
 
             string email = string.Empty;
             if(!string.IsNullOrEmpty(username))
@@ -66,17 +75,20 @@ namespace CanvasService.Tasks
             request.AddParameter("enable_sis_reactivation", true, ParameterType.QueryString); //If the user was deleted, reactivate
             IRestResponse userAdd = client.Post(request);
 
-            //PUT to user for pronouns
-            request = null;
-            request = new RestRequest("/users/sis_user_id:" + sis_user_id);
-            request.RequestFormat = DataFormat.None;
-            request.Method = Method.PUT;
-            request.AddHeader("Authorization", "Bearer " + Environment.GetEnvironmentVariable("CANVAS-API-KEY"));
+            if (!string.IsNullOrEmpty(pronoun))
+            {
+                //PUT to user for pronouns
+                request = null;
+                request = new RestRequest("/users/sis_user_id:" + sis_user_id);
+                request.RequestFormat = DataFormat.None;
+                request.Method = Method.PUT;
+                request.AddHeader("Authorization", "Bearer " + Environment.GetEnvironmentVariable("CANVAS-API-KEY"));
 
-            request.AddParameter("user[pronouns]", pronoun, ParameterType.QueryString);
-            //https://community.canvaslms.com/t5/Idea-Conversations/Personal-Pronouns-should-be-editable-through-Canvas-API-without/idi-p/464190#:~:text=Current%20Solution&text=Have%20an%20admin%20manually%20check,change%20their%20pronouns%20in%20Canvas%E2%80%9D
+                request.AddParameter("user[pronouns]", pronoun, ParameterType.QueryString);
+                //https://community.canvaslms.com/t5/Idea-Conversations/Personal-Pronouns-should-be-editable-through-Canvas-API-without/idi-p/464190#:~:text=Current%20Solution&text=Have%20an%20admin%20manually%20check,change%20their%20pronouns%20in%20Canvas%E2%80%9D
 
-            IRestResponse userResponse = client.Put(request);
+                IRestResponse userResponse = client.Put(request);
+            }
 
             return task.Completed(output, logList);
 
