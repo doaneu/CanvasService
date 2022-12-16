@@ -18,6 +18,11 @@ namespace CanvasService
                     services.AddConductorWorkflowTask<CreateCanvasUserTask>();
                     services.AddConductorWorkflowTask<UpdateCanvasUserTask>();
                     services.AddConductorWorkflowTask<DeleteCanvasUserTask>();
+                    services.AddConductorWorkflowTask<CheckCanvasEnrollmentExistsTask>();
+                    services.AddConductorWorkflowTask<CreateCanvasEnrollmentTask>();
+                    services.AddConductorWorkflowTask<DeactivateCanvasEnrollmentTask>();
+                    services.AddConductorWorkflowTask<DeleteCanvasEnrollmentTask>();
+                    services.AddConductorWorkflowTask<ReactivateCanvasEnrollmentTask>();
 
                     services.AddHostedService<WorkflowsWorkerService>();
                 })
